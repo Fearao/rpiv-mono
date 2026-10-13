@@ -119,3 +119,23 @@ by this package — see [localization.md](./localization.md).
 
 No other environment variables are read. The package makes no model calls, so it needs no
 API keys or model settings of its own.
+
+
+## Fork notification configuration
+
+```json
+{
+  "notification": {
+    "enabled": true,
+    "receiver": "YOUR_LOCAL_RECEIVER"
+  }
+}
+```
+
+Set this only in the local config file (same XDG/legacy lookup as other fields), not in Git.
+The default is off. `enabled` must be the boolean `true`; `receiver` must be a nonempty string,
+not a command-line flag, and contain no control characters. The extension passes argv directly
+to `xnotify`, never through a shell. Install/configure that CLI separately; absent CLI, nonzero
+exit, or timeout produces a fixed warning and never blocks the questionnaire. Enabling it
+sends the first question's bounded summary to your configured external recipient; previews,
+options, notes and answers are not sent.

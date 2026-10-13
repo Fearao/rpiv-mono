@@ -1102,3 +1102,34 @@ describe("ask_user_question — multi-select notes end-to-end", () => {
 		expect(r?.details.answers[0].notes).toBe("hi");
 	});
 });
+
+describe("fork — eight-question real component flow", () => {
+	it("renders all eight tabs, preserves answers across collapse, then submits", async () => {
+		const params = {
+			questions: Array.from({ length: 8 }, (_, i) => ({
+				question: `Q${i}?`,
+				header: `H${i}`,
+				options: [
+					{ label: `A${i}`, description: "a" },
+					{ label: `B${i}`, description: "b" },
+				],
+			})),
+		};
+		const tool = register();
+		const { custom } = driveCustom((c) => {
+			for (let i = 0; i < 8; i++) {
+				expect(c.render(120).some((line) => line.includes(`Q${i}?`))).toBe(true);
+				c.handleInput(KEY.ENTER);
+			}
+			c.handleInput("\x1d");
+			expect(c.render(120)).toHaveLength(1);
+			c.handleInput("\x1d");
+			c.handleInput(KEY.ENTER);
+		});
+		const result = await tool.execute("tc", params, undefined, undefined, { hasUI: true, ui: { custom } } as never);
+		expect(result.details).toMatchObject({ cancelled: false });
+		expect((result.details as QuestionnaireResult).answers.map((a) => a.answer)).toEqual(
+			Array.from({ length: 8 }, (_, i) => `A${i}`),
+		);
+	});
+});

@@ -9,12 +9,12 @@
   </a>
 </div>
 
-Let the model ask you instead of guessing. This extension gives [Pi Agent](https://github.com/badlogic/pi-mono) one tool — `ask_user_question` — that opens a terminal dialog of up to four questions with written-out options, and hands your choices back as structured data. Install it if you would rather spend fifteen seconds picking than an hour undoing a wrong assumption.
+Let the model ask you instead of guessing. This extension gives [Pi Agent](https://github.com/badlogic/pi-mono) one tool — `ask_user_question` — that opens a terminal dialog of up to eight questions with written-out options, and hands your choices back as structured data. Install it if you would rather spend fifteen seconds picking than an hour undoing a wrong assumption.
 
 ## Install
 
 ```sh
-pi install npm:@juicesharp/rpiv-ask-user-question
+pi install git:github.com/Fearao/rpiv-mono@fearao/ask-user-workflow
 ```
 
 Restart your Pi session.
@@ -40,10 +40,20 @@ When the model asks several things at once, `Tab` moves between them and a Submi
 - **Typed options instead of a wall of prose** — each question carries 2-4 authored choices, and every choice comes with a description of what it means or what it costs you.
 - **You can always answer in your own words**. A `Type something.` row is appended to every question. On multi-select questions, it keeps checked options and custom text in the same answer. The row widens to the full pane while you type, keeps its multiline draft visible while you browse, and supports Pi's `Shift+Enter` newline and `Ctrl+G` external-editor flows.
 - **Compare real artifacts, not just labels** — an option can carry a markdown `preview` (ASCII mockup, code, diagram, config) that renders in a bordered box beside the option list.
-- **One interruption, not five** — up to four questions arrive in a single tabbed dialog, and the Submit tab lists your answers and names anything still blank before you commit.
+- **One interruption, not five** — up to eight questions arrive in a single tabbed dialog, and the Submit tab lists your answers and names anything still blank before you commit.
 - **Notes on any answer — or on all of them** — `n` opens a multiline note editor on any question tab, and on the Submit tab it opens one global note for the whole questionnaire. Per-question notes reach the model as `user notes: <text>`, the global note as `global note: <text>`; neither marks a question answered.
 - **Keep reading while you answer** — the question opens below the transcript, and `PageUp`/`PageDown` or the mouse wheel keep scrolling the conversation; `Ctrl+]` shrinks the dialog to one line when you want more room, then brings it back with your answers intact.
 - **Works outside the terminal too** — in RPC and ACP hosts such as the VS Code pendant or Zed the questionnaire walks through the host's native dialogs (notes are terminal-only and do not carry over), and in non-interactive runs the tool is removed from the model's tool list instead of failing every call.
+
+## Fearao workflow additions
+
+- Maximum 8 questions; model guidance normally prefers 2–4 related questions.
+- Explicit cancellation stops the current agent operation (including later tools in a mixed batch), not Pi itself. Completed actions are not undone. UI/validation errors are not treated as cancellation.
+- Partial and empty submissions report unanswered questions and forbid inferring skipped decisions.
+- Opt-in, fire-and-forget `xnotify` via the existing prompt event. Set `notification.enabled` and `notification.receiver` in local config; no recipient is embedded in this fork. Missing CLI, failure or timeout never blocks the questionnaire.
+- Call this tool alone; it is sequential. It is not permission for risky actions or plan approval.
+
+See [fork maintenance and acceptance checklist](../../FORK.md).
 
 ## Configuration
 
@@ -51,10 +61,12 @@ Optional. Settings live in `~/.config/rpiv-ask-user-question/config.json`; the f
 
 | Setting | What it does | Default |
 | --- | --- | --- |
+| `notification.enabled` | Enable `xnotify` reminders (requires installed CLI and configured receiver). | `false` |
+| `notification.receiver` | Local receiver alias/ID; never inferred. | unset |
 | `collapseKey` | Key that collapses and expands the dialog. Accepts Pi keybinding ids such as `alt+o`; `"off"` disables the shortcut. | `"ctrl+]"` |
 | `guidance.description` | Full replacement for the tool description the model sees. A non-empty string replaces the built-in text entirely — no merging. | built-in description |
 | `guidance.promptSnippet` | One-line description of the tool in the system prompt — tune how eagerly the model asks. | built-in snippet |
-| `guidance.promptGuidelines` | Usage guidelines given to the model, as a list of strings. | 4 built-in guidelines |
+| `guidance.promptGuidelines` | Usage guidelines given to the model, as a list of strings. | 7 built-in guidelines |
 
 ```json
 { "collapseKey": "alt+o" }
@@ -76,7 +88,7 @@ Malformed JSON falls back to the defaults with a warning; an individual unusable
 - Pi Agent, with an interactive terminal or an RPC/ACP host. Non-interactive runs never see the tool.
 - A terminal at least 100 columns wide for side-by-side previews; narrower terminals stack the preview under the options.
 
-No native dependencies, no compiler, no API keys — the extension makes no model calls of its own.
+No native dependencies, no compiler, no API keys — the extension makes no model calls of its own. Optional reminders require a separately installed and configured `xnotify` CLI.
 
 ## Troubleshooting
 

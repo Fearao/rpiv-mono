@@ -18,8 +18,10 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerAskUserQuestionTool } from "./ask-user-question.js";
+import { registerQuestionNotifications } from "./notifications.js";
 import { registerAskUserQuestionReconciler } from "./reconcile.js";
 import { I18N_NAMESPACE } from "./state/i18n-bridge.js";
+import { registerQuestionCancellationPolicy } from "./workflow-policy.js";
 
 type I18nLoader = {
 	registerLocalesFromDir: (namespace: string, packageUrl: string, options?: { label?: string }) => void;
@@ -51,4 +53,6 @@ export {
 export default function (pi: ExtensionAPI) {
 	registerAskUserQuestionTool(pi);
 	registerAskUserQuestionReconciler(pi);
+	registerQuestionNotifications(pi);
+	registerQuestionCancellationPolicy(pi);
 }

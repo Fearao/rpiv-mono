@@ -1,3 +1,7 @@
+> **Fearao thin fork:** Git installation loads **only `ask_user_question`**, not the RPIV suite.
+> See [FORK.md](./FORK.md) for installation, local notification configuration, cancellation semantics and upstream maintenance.
+> The upstream project documentation follows below; this fork is not published to the upstream npm scope.
+
 # rpiv-mono
 
 [![CI](https://img.shields.io/github/actions/workflow/status/juicesharp/rpiv-mono/ci.yml?branch=main&label=CI)](https://github.com/juicesharp/rpiv-mono/actions/workflows/ci.yml)

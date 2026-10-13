@@ -95,3 +95,15 @@ When it does happen, you get a structured envelope rather than a raw `TypeError`
 
 Both messages tell the model the questions were never shown and to ask them as plain chat
 text instead of treating the failure as a decline.
+
+
+## Fork reminders and cancellation
+
+An optional `xnotify` adapter listens to the prompt event in TUI and RPC hosts. It requires
+explicit local opt-in and a receiver; it sends one first-question summary per questionnaire
+with a 5-second timeout, without blocking the UI. Only a fixed diagnostic is logged on failure.
+No-UI and invalid requests emit no prompt event and send no reminder.
+
+Explicit user cancellation stops the current agent operation, not the Pi process. UI failure
+and validation rejection are never cancellation. Empty/partial submissions do not stop and
+retain unanswered indexes; model guidance requires clarifying still-blocking decisions.

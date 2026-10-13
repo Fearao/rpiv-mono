@@ -3,28 +3,31 @@ import type { QuestionAnswer, QuestionnaireResult, QuestionParams } from "./type
 
 export const DECLINE_MESSAGE = "User declined to answer questions";
 export const ENVELOPE_PREFIX = "User has answered your questions:";
+export const PARTIAL_SUFFIX =
+	"Do not infer unanswered decisions or treat them as accepting recommendations. Clarify any still-blocking decision before taking actions that depend on it.";
 export const ENVELOPE_SUFFIX = "You can now continue with the user's answers in mind.";
 
-/**
- * Map a `QuestionnaireResult` (or null/cancelled) to the LLM-facing tool envelope.
- * Pure of `(result, params)`; cancelled and "no segments" both fall to `DECLINE_MESSAGE`
- * so the model sees a single canonical "didn't answer" signal regardless of why.
- * "No segments" means no answers AND no global note — the `global note:` segment is
- * pushed before the zero-segments check, so a note-bearing submit with zero answers
- * still yields the answered envelope. A partial submit names the questions left blank
- * in an `unanswered:` segment (and `details.unanswered`, their indexes) so the model can
- * tell "not decided yet" from "settled" (#291); it never counts as an answer, and a fully
- * answered result stays byte-identical.
+/** Explicit cancellation stops; missing UI and errors are not user decisions.
+ * Partial (including empty) submissions retain unanswered indexes and forbid assumptions.
  */
-export function buildQuestionnaireResponse(result: QuestionnaireResult | null | undefined, params: QuestionParams) {
-	if (!result || result.cancelled) {
-		// Decline text stays canonical even when a global note rides the cancelled result;
-		// the note survives in `details` (like partial `answers`) for replay consumers.
-		return buildToolResult(DECLINE_MESSAGE, {
-			answers: result?.answers ?? [],
+export function buildQuestionnaireResponse(
+	result: QuestionnaireResult | null | undefined,
+	params: QuestionParams,
+): ReturnType<typeof buildToolResult> & { terminate?: boolean } {
+	if (!result) {
+		return buildToolResult("The questionnaire returned no usable result; ask as plain chat text instead.", {
+			answers: [],
 			cancelled: true,
-			...(result?.globalNote && result.globalNote.length > 0 ? { globalNote: result.globalNote } : {}),
+			error: "no_custom_ui",
 		});
+	}
+	if (result.error)
+		return buildToolResult(
+			`Questionnaire unavailable (${result.error}); this is not a user cancellation. Ask as plain chat text instead.`,
+			result,
+		);
+	if (result.cancelled) {
+		return { ...buildToolResult(DECLINE_MESSAGE, result), terminate: true };
 	}
 	const segments: string[] = [];
 	const unanswered: number[] = [];
@@ -34,15 +37,16 @@ export function buildQuestionnaireResponse(result: QuestionnaireResult | null | 
 		else unanswered.push(i);
 	}
 	const hasGlobalNote = result.globalNote !== undefined && result.globalNote.length > 0;
-	if (segments.length === 0 && !hasGlobalNote) {
-		return buildToolResult(DECLINE_MESSAGE, { answers: result.answers, cancelled: true });
-	}
+	const prefix = segments.length === 0 && !hasGlobalNote ? "User submitted no answers:" : ENVELOPE_PREFIX;
 	if (unanswered.length > 0) segments.push(buildUnansweredSegment(unanswered, params));
 	// Global note rides after the per-question segments: raw multiline echo (no
 	// reformatting), trailing period mirroring `buildAnswerSegment`'s shape.
 	if (hasGlobalNote) segments.push(`global note: ${result.globalNote}.`);
 	const details = unanswered.length > 0 ? { ...result, unanswered } : result;
-	return buildToolResult(`${ENVELOPE_PREFIX} ${segments.join(" ")} ${ENVELOPE_SUFFIX}`, details);
+	return buildToolResult(
+		`${prefix} ${segments.join(" ")} ${unanswered.length > 0 ? PARTIAL_SUFFIX : ENVELOPE_SUFFIX}`,
+		details,
+	);
 }
 
 /** `unanswered: "<question>", "<question>".` — the questions shown but left blank on a partial submit. */

@@ -7,6 +7,7 @@ import {
 	registerAskUserQuestionTool,
 } from "./ask-user-question.js";
 import { prepareQuestionArguments } from "./tool/normalize-params.js";
+import { PARTIAL_SUFFIX } from "./tool/response-envelope.js";
 import type { QuestionnaireResult, QuestionParams } from "./tool/types.js";
 
 describe("buildItemsForQuestion", () => {
@@ -133,10 +134,10 @@ describe("buildQuestionnaireResponse — cancelled", () => {
 		],
 	};
 
-	it("null result → decline envelope + empty answers + cancelled true", () => {
+	it("null result → host error, not a user cancellation", () => {
 		const r = buildQuestionnaireResponse(null, params);
-		expect(r.content[0]).toEqual({ type: "text", text: "User declined to answer questions" });
-		expect(r.details.cancelled).toBe(true);
+		expect(r.details.error).toBe("no_custom_ui");
+		expect(r).not.toHaveProperty("terminate", true);
 		expect(r.details.answers).toEqual([]);
 	});
 
@@ -348,7 +349,7 @@ describe("buildQuestionnaireResponse — completed", () => {
 		expect(r.details.answers[0].notes).toBe("both");
 	});
 
-	it("cancelled: false with no matching answers still returns DECLINE_MESSAGE text", () => {
+	it("cancelled: false with no matching answers preserves unanswered submission", () => {
 		const params: QuestionParams = {
 			questions: [
 				{
@@ -363,8 +364,9 @@ describe("buildQuestionnaireResponse — completed", () => {
 		};
 		const result: QuestionnaireResult = { cancelled: false, answers: [] };
 		const r = buildQuestionnaireResponse(result, params);
-		expect(r.details.cancelled).toBe(true);
-		expect(r.content[0]).toEqual({ type: "text", text: "User declined to answer questions" });
+		expect(r.details.cancelled).toBe(false);
+		expect(r.details.unanswered).toEqual([0]);
+		expect(r.content[0].text).toContain("User submitted no answers:");
 	});
 });
 
@@ -431,11 +433,11 @@ describe("buildQuestionnaireResponse — global note", () => {
 		expect(r.details.globalNote).toBe("kept for replay");
 	});
 
-	it("zero answers + no note still declines (fresh details literal carries no globalNote key)", () => {
+	it("zero answers + no note stays a submission without a globalNote key", () => {
 		const result: QuestionnaireResult = { cancelled: false, answers: [] };
 		const r = buildQuestionnaireResponse(result, params);
-		expect(r.content[0].text).toBe("User declined to answer questions");
-		expect(r.details).toEqual({ answers: [], cancelled: true });
+		expect(r.content[0].text).toContain("User submitted no answers:");
+		expect(r.details).toEqual({ answers: [], cancelled: false, unanswered: [0] });
 	});
 });
 
@@ -547,7 +549,7 @@ describe("buildQuestionnaireResponse — multi-question mixed types", () => {
 		};
 		const r = buildQuestionnaireResponse(result, params);
 		expect(r.content[0].text).toBe(
-			'User has answered your questions: "Q2?"="B". unanswered: "Q1?". You can now continue with the user\'s answers in mind.',
+			`User has answered your questions: "Q2?"="B". unanswered: "Q1?". ${PARTIAL_SUFFIX}`,
 		);
 		expect(r.details.unanswered).toEqual([0]);
 	});
@@ -588,7 +590,7 @@ describe("buildQuestionnaireResponse — multi-question mixed types", () => {
 			params,
 		);
 		expect(r.content[0].text).toBe(
-			'User has answered your questions: "Q1?"="A". unanswered: "Q2?". global note: later. You can now continue with the user\'s answers in mind.',
+			`User has answered your questions: "Q1?"="A". unanswered: "Q2?". global note: later. ${PARTIAL_SUFFIX}`,
 		);
 	});
 

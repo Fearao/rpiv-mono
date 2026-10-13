@@ -21,7 +21,7 @@ ask_user_question({
       ],
       multiSelect?: boolean,       // default false
     },
-    // … 1-4 questions total
+    // … 1-8 questions total
   ]
 })
 ```
@@ -30,7 +30,7 @@ ask_user_question({
 
 | Field | Constraint | Enforced by |
 | --- | --- | --- |
-| `questions` | 1-4 entries | TypeBox schema + `validateQuestionnaire` |
+| `questions` | 1-8 entries | TypeBox schema + `validateQuestionnaire` |
 | `questions[].header` | max 16 characters | TypeBox schema only |
 | `questions[].options` | 2-4 entries | TypeBox schema (both bounds) + `validateQuestionnaire` (minimum only) |
 | `options[].label` | max 60 characters | TypeBox schema only |
@@ -55,7 +55,7 @@ code. The `content[0].text` string is written for the model, not for a log.
 | `error` | Cause |
 | --- | --- |
 | `no_questions` | `questions` was empty |
-| `too_many_questions` | more than 4 questions in one call |
+| `too_many_questions` | more than 8 questions in one call |
 | `duplicate_question` | two questions with identical text |
 | `empty_options` | a question carried fewer than 2 options |
 | `reserved_label` | an option used a reserved label |
@@ -72,6 +72,7 @@ code. The `content[0].text` string is written for the model, not for a log.
 ```ts
 {
   content: [{ type: "text", text: string }], // envelope prose, or the decline message
+  terminate?: true,                          // explicit user cancellation only
   details: {
     answers: Array<{
       questionIndex: number,
@@ -99,9 +100,9 @@ and the Submit tab's global note as a trailing `global note: <text>` segment. A 
 note alone still yields the answered envelope — it counts as an answer even when every
 question is blank.
 
-Cancelling, and any result with neither answer segments nor a global note, both collapse
-to the single string `User declined to answer questions` so the model sees one canonical
-signal. Partial submission is allowed: the questions left blank are named in an
+Explicit cancellation yields `User declined to answer questions` and top-level `terminate: true`.
+An empty submission instead stays `cancelled: false`, names every question in `unanswered`,
+and is not treated as cancellation. UI/validation errors never terminate. Partial submission is allowed: the questions left blank are named in an
 `unanswered: "<question>", …` segment after the answers (before any global note), and their
 indexes are in `details.unanswered`. Both are absent when every question is answered.
 A cancelled result always reads as the decline in text; its note, if any, survives only
@@ -128,3 +129,12 @@ process or network boundary stay cheap.
 Stability policy for the `rpiv:*` namespace: channel names are immutable, payload changes
 are append-only and always optional, payloads stay JSON-safe, and any breaking change ships
 as a new channel (e.g. `rpiv:ask-user:prompt.v2`) rather than a version field.
+
+
+## Fork execution policy
+
+The tool is sequential. A `tool_result` cancellation hook aborts the current operation as a
+backstop for mixed tool batches, because Pi only honors `terminate` alone when every result
+in a batch terminates. Previously executed actions cannot be undone; do not batch this tool
+with other tools. Partial envelopes replace the continue suffix with a warning not to infer
+unanswered decisions or accept recommendations by default.
