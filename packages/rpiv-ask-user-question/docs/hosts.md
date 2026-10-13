@@ -99,8 +99,8 @@ text instead of treating the failure as a decline.
 
 ## Fork reminders and cancellation
 
-An optional `xnotify` adapter listens to the prompt event in TUI and RPC hosts. It requires
-explicit local opt-in and a receiver; it sends one first-question summary per questionnaire
+A default-on `larknotify` adapter listens to the prompt event in TUI and RPC hosts. It uses
+larknotify's configured default target unless a local receiver override is set; it sends one first-question summary per questionnaire
 with a 5-second timeout, without blocking the UI. Only a fixed diagnostic is logged on failure.
 No-UI and invalid requests emit no prompt event and send no reminder.
 

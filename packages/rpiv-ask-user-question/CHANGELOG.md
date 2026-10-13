@@ -12,7 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Allow up to eight questions while guiding the model toward 2–4 related questions by default.
 - Stop the current Pi operation on explicit cancellation without treating UI or validation failures as cancellation.
 - Preserve partial and empty submissions as unanswered decisions instead of inferred acceptance.
-- Add explicit local opt-in `xnotify` reminders with bounded, non-blocking, redacted failure handling.
+- Add default-on `larknotify` reminders using its configured default target, with explicit disable, optional target override, bounded non-blocking execution and redacted failure handling.
 - Add a root Pi manifest that activates only this questionnaire when the fork is installed from Git.
 - Make the root prepare hook skip Husky during Pi's `--omit=dev` consumer install while preserving hooks for development installs.
 

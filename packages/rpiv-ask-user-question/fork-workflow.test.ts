@@ -147,36 +147,41 @@ describe("fork cancellation policy", () => {
 	});
 });
 
-describe("fork xnotify adapter", () => {
-	it("is opt-in and rejects malformed recipient configs", () => {
+describe("fork larknotify adapter", () => {
+	it("is enabled by default and uses larknotify's default target", () => {
 		const { pi, prompt } = setup();
-		prompt();
+		prompt("你选哪个方案？");
+		expect(pi.exec).toHaveBeenCalledWith("larknotify", ["send", "[Pi] 需要你回答：你选哪个方案？"], {
+			timeout: 5000,
+		});
+	});
+	it("can be disabled explicitly and rejects malformed overrides", () => {
+		const { pi, prompt } = setup();
 		for (const notification of [
+			{ enabled: false },
 			null,
-			{},
-			{ enabled: false, receiver: "test" },
-			{ enabled: "true", receiver: "test" },
-			{ enabled: true, receiver: 1 },
-			{ enabled: true, receiver: " " },
-			{ enabled: true, receiver: "-flag" },
-			{ enabled: true, receiver: "bad\nreceiver" },
+			{ enabled: "true" },
+			{ receiver: 1 },
+			{ receiver: " " },
+			{ receiver: "-flag" },
+			{ receiver: "bad\nreceiver" },
 		]) {
 			config(notification);
 			prompt();
 		}
 		expect(pi.exec).not.toHaveBeenCalled();
 	});
-	it("sends one bounded summary per event with argv and timeout", () => {
-		config({ enabled: true, receiver: " test-receiver " });
+	it("passes an optional trimmed target after the message", () => {
+		config({ receiver: " test-receiver " });
 		const { pi, prompt } = setup();
 		prompt("你选哪个方案？");
 		expect(pi.exec).toHaveBeenCalledOnce();
-		expect(pi.exec).toHaveBeenCalledWith("xnotify", ["[Pi] 需要你回答：你选哪个方案？", "test-receiver"], {
+		expect(pi.exec).toHaveBeenCalledWith("larknotify", ["send", "[Pi] 需要你回答：你选哪个方案？", "test-receiver"], {
 			timeout: 5000,
 		});
 	});
 	it("does not block the questionnaire on a pending notification", async () => {
-		config({ enabled: true, receiver: "test-receiver" });
+		config({ receiver: "test-receiver" });
 		const { pi, captured } = setup();
 		vi.mocked(pi.exec).mockImplementation(() => new Promise(() => {}));
 		const custom = vi.fn(async () => ({ answers: [], cancelled: true }));
@@ -189,7 +194,7 @@ describe("fork xnotify adapter", () => {
 	it.each(["throw", "reject", "nonzero"])(
 		"notification %s is contained and does not leak private text",
 		async (failure) => {
-			config({ enabled: true, receiver: "test-receiver" });
+			config({ receiver: "test-receiver" });
 			const { pi, prompt } = setup();
 			const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 			vi.mocked(pi.exec).mockImplementation(() => {
@@ -205,7 +210,7 @@ describe("fork xnotify adapter", () => {
 		},
 	);
 	it("invalid or no-UI calls do not notify", async () => {
-		config({ enabled: true, receiver: "test-receiver" });
+		config({ receiver: "test-receiver" });
 		const { pi, captured } = setup();
 		const tool = captured.tools.get("ask_user_question")!;
 		await tool.execute("tc", { questions: [] }, undefined, undefined, createMockCtx({ hasUI: true }));

@@ -50,7 +50,7 @@ When the model asks several things at once, `Tab` moves between them and a Submi
 - Maximum 8 questions; model guidance normally prefers 2–4 related questions.
 - Explicit cancellation stops the current agent operation (including later tools in a mixed batch), not Pi itself. Completed actions are not undone. UI/validation errors are not treated as cancellation.
 - Partial and empty submissions report unanswered questions and forbid inferring skipped decisions.
-- Opt-in, fire-and-forget `xnotify` via the existing prompt event. Set `notification.enabled` and `notification.receiver` in local config; no recipient is embedded in this fork. Missing CLI, failure or timeout never blocks the questionnaire.
+- Default-on, fire-and-forget `larknotify` via the existing prompt event. It uses larknotify's configured default target; `notification.enabled=false` disables it and `notification.receiver` optionally overrides the target. Missing CLI, failure or timeout never blocks the questionnaire.
 - Call this tool alone; it is sequential. It is not permission for risky actions or plan approval.
 
 See [fork maintenance and acceptance checklist](../../FORK.md).
@@ -61,8 +61,8 @@ Optional. Settings live in `~/.config/rpiv-ask-user-question/config.json`; the f
 
 | Setting | What it does | Default |
 | --- | --- | --- |
-| `notification.enabled` | Enable `xnotify` reminders (requires installed CLI and configured receiver). | `false` |
-| `notification.receiver` | Local receiver alias/ID; never inferred. | unset |
+| `notification.enabled` | Set `false` to disable larknotify reminders. | `true` |
+| `notification.receiver` | Optional target override; omitted uses larknotify's configured default target. | unset |
 | `collapseKey` | Key that collapses and expands the dialog. Accepts Pi keybinding ids such as `alt+o`; `"off"` disables the shortcut. | `"ctrl+]"` |
 | `guidance.description` | Full replacement for the tool description the model sees. A non-empty string replaces the built-in text entirely — no merging. | built-in description |
 | `guidance.promptSnippet` | One-line description of the tool in the system prompt — tune how eagerly the model asks. | built-in snippet |
@@ -88,7 +88,7 @@ Malformed JSON falls back to the defaults with a warning; an individual unusable
 - Pi Agent, with an interactive terminal or an RPC/ACP host. Non-interactive runs never see the tool.
 - A terminal at least 100 columns wide for side-by-side previews; narrower terminals stack the preview under the options.
 
-No native dependencies, no compiler, no API keys — the extension makes no model calls of its own. Optional reminders require a separately installed and configured `xnotify` CLI.
+No native dependencies, no compiler, no API keys — the extension makes no model calls of its own. Default reminders require a separately installed and configured `larknotify` CLI.
 
 ## Troubleshooting
 

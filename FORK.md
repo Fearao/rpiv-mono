@@ -33,8 +33,8 @@ upstream npm is the rollback; local configuration is preserved.
 | `ask-user-question.ts` | Sequential execution; default 2–4-question guidance, no permission/plan approval, no inferred unanswered decisions, no mixed batches. |
 | `tool/response-envelope.ts` | Explicit cancel terminates; errors don't; empty/partial submissions preserve unanswered indexes with an actionable warning. |
 | `workflow-policy.ts` | `tool_result` hook calls `ctx.abort()` only for actual cancellation. Needed because `terminate` alone does not stop mixed batches in Pi 1.1.0. |
-| `notifications.ts` | Optional event-driven xnotify adapter, 80-character first-question summary, argv, 5-second timeout, contained failures. |
-| `config.ts`, `index.ts`, manifests | Local opt-in/recipient; wire adapters; include modules in published files and Git installation entrypoint. |
+| `notifications.ts` | Default-on event-driven larknotify adapter, 80-character first-question summary, argv, optional target override, 5-second timeout, contained failures. |
+| `config.ts`, `index.ts`, manifests | Default-on setting, explicit disable and optional local target override; wire adapters; include modules in published files and Git installation entrypoint. |
 | `scripts/prepare.mjs` | Preserve Husky for development installs but skip it when Pi explicitly installs with `--omit=dev`. |
 
 No UI rewrite. Upstream owns previews, tabs, notes/global notes, multiline input/external editor,
@@ -46,25 +46,31 @@ and the abort hook prevent later sibling tools from running; a tool earlier in t
 already have run. Hosts/providers must honor Pi's abort signal. Queued future user messages
 remain governed by the host; cancellation is not a permanent shutdown.
 
-## Opt-in notification (local only)
+## Default-on notification (local override only)
 
-In `~/.config/rpiv-ask-user-question/config.json` (or the configured XDG location):
+No questionnaire config file is required. By default the adapter runs:
 
-```json
-{
-  "notification": {
-    "enabled": true,
-    "receiver": "YOUR_LOCAL_RECEIVER"
-  }
-}
+```sh
+larknotify send "[Pi] 需要你回答：…"
 ```
 
-The default is **off**, with no embedded recipient. Install and configure `xnotify` separately.
-The current development host does not have `xnotify`; notifications are unit-tested with a fake
-subprocess, not sent during verification. No automatic fallback to another notification service.
-Enabling notifications sends a bounded first-question summary and question count externally;
-no previews, option descriptions, answer text or notes are transmitted. Error diagnostics do
-not include the recipient, question or subprocess output.
+This uses larknotify's own configured default target. To disable reminders locally:
+
+```json
+{ "notification": { "enabled": false } }
+```
+
+To override the target locally:
+
+```json
+{ "notification": { "receiver": "YOUR_LOCAL_TARGET" } }
+```
+
+The receiver is never embedded in this fork. `larknotify` must be installed and configured
+separately. Missing CLI, nonzero exit, rejection, or timeout emits a fixed diagnostic and never
+blocks the questionnaire. The adapter sends a bounded first-question summary and question count;
+previews, option descriptions, answer text and notes are not sent. An invalid explicit override
+fails closed and sends nothing.
 
 ## Tests and verification
 
@@ -76,7 +82,7 @@ npm run check:host-provided-deps
 ```
 
 Fork tests cover 8/9-question validation, eight-question real component submission/folding,
-notification opt-in, malformed config, argv, pending sends, synchronous/asynchronous failure,
+notification defaults, explicit disable, optional target, malformed config, argv, pending sends, synchronous/asynchronous failure,
 nonzero exit, TUI/RPC cancellation, invalid/unavailable UI, blank/partial submissions and the
 real Pi agent loop with an offline stream provider and a mixed tool batch. Existing upstream
 questionnaire tests cover previews, drafts, multiline input, external editors and RPC behavior.
@@ -87,7 +93,7 @@ Manual acceptance before replacing a real install:
 - [ ] Check multiline custom answers, external editor, restored drafts and global notes.
 - [ ] Answer eight questions and review Submit; try a partial and a completely blank submission.
 - [ ] Cancel and confirm no additional autonomous work follows; Pi itself remains open.
-- [ ] With a locally installed/configured xnotify, opt in and check one real reminder arrives.
+- [ ] With the configured larknotify default target, check one real default reminder arrives; then test explicit disable.
 
 Do not infer that automation replaces these real-terminal/real-recipient checks.
 

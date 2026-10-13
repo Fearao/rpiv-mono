@@ -9,7 +9,7 @@ export const COLLAPSE_KEY_OFF: CollapseKeySpec = "off";
 
 export interface AskUserQuestionConfig {
 	guidance?: GuidanceFields;
-	/** Explicit opt-in; receiver belongs only in local config, never in source. */
+	/** Default-on larknotify reminder. `false` disables it; receiver is an optional local target override. */
 	notification?: { enabled?: boolean; receiver?: string };
 	/**
 	 * Key spec for the collapse/expand shortcut, in the same format as pi-coding-agent
