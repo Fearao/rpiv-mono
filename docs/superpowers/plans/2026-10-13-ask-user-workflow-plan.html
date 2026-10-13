@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Ask User Implementation Plan</title><body style="background:#151922;color:#dde3ed;font:16px/1.7 system-ui;max-width:960px;margin:40px auto;padding:24px"><h1>Ask User Workflow Implementation Plan</h1><blockquote>For agentic workers: execute inline using executing-plans and TDD. The user explicitly approved implementation; no delegation.</blockquote><p><strong>Goal:</strong> Retain upstream questionnaire UI with eight questions, opt-in xnotify and stop-on-cancel semantics.</p><p><strong>Architecture:</strong> Small policy and event adapters, no UI rewrite. Pure response formatting distinguishes cancellation, errors and unanswered submissions. Sequential tool execution plus cancellation hook stops mixed batches.</p><p><strong>Tech Stack:</strong> TypeScript, TypeBox, Vitest, pi 1.1.0.</p><hr><h3>1. Baseline</h3><ul><li>- [ ] Run <code>npm ci --ignore-scripts --no-audit --no-fund</code>, then <code>npx vitest run packages/rpiv-ask-user-question --maxWorkers=2</code>. Expect no failures.</li></ul><h3>2. Eight-question limit</h3><p>Modify packages/rpiv-ask-user-question/tool/types.ts, tool/types.test.ts and factory.test.ts. Test 8 accepted, 9 rejected, eight real component selections + Submit. Run tests red before changing the constant.</p><pre>expect(MAX_QUESTIONS).toBe(8);
+expect(Value.Check(QuestionsSchema, Array.from({length:8}, () =&gt; makeQuestion()))).toBe(true);
+expect(Value.Check(QuestionsSchema, Array.from({length:9}, () =&gt; makeQuestion()))).toBe(false);
+// Implementation:
+export const MAX_QUESTIONS = 8;
+// QuestionsSchema description must interpolate MAX_QUESTIONS.</pre><h3>3. Notification adapter</h3><p>Create notifications.ts and notifications.test.ts; modify config.ts, index.ts and package.json files manifest. Register a single event listener, runtime-load local notification config.</p><pre>// Local config shape (no actual personal recipient in repository)
+{ "notification": { "enabled": true, "receiver": "YOUR_LOCAL_RECEIVER" } }
+// Validate boolean true and a non-empty trimmed receiver, never infer a recipient.
+// Listener, non-blocking and with both sync/async failures caught:
+void pi.exec("xnotify", [message, receiver], {timeout:5000})
+  .then(result =&gt; { if (result.code !== 0) reportFailure(); })
+  .catch(reportFailure);
+// Test no-config/disabled/malformed recipient; success; nonzero; rejected/throwing exec;
+// pending promise does not block; one event = one call; no question preview leakage.</pre><h3>4. Cancellation and unanswered policy</h3><p>Modify tool/response-envelope.ts, ask-user-question.ts, ask-user-question.test.ts; create workflow-policy.ts and workflow-policy.test.ts; register policy in index.ts and publish manifest.</p><pre>// Test explicit cancel produces terminate; errors/null UI do not.
+expect(buildQuestionnaireResponse({answers:[],cancelled:true}, params).terminate).toBe(true);
+// Keep empty submissions cancelled:false and unanswered:[0,...].
+// Prefix/no-answer message + unanswered segment; partial response suffix forbids assumptions.
+// Tool registration:
+executionMode: "sequential"
+// tool_result handler only for this tool, !isError, valid details, cancelled and !error:
+ctx.abort();
+return {terminate:true};
+// Test hooks through mock pi, then real Agent loop to verify later mixed-batch tools do not run.
+// Add model guidelines: default 2–4 questions, up to 8; not for permission/plan approval;
+// don't infer unanswered decisions; don't batch this call with other tools.</pre><h3>5. Installation and docs</h3><p>Modify root package.json with <code>"pi":{"extensions":["./packages/rpiv-ask-user-question/index.ts"]}</code>. It limits Git installation to the questionnaire. Update README at root, question package README/docs/tool-schema.md/docs/hosts.md/docs/configuration.md, add FORK.md with baseline, patch map, installation, local config, migration and manual acceptance checklist. Keep dependency/package names for workspace identity, do not publish to upstream npm scope.</p><h3>6. Verification and delivery</h3><ul><li>- [ ] <code>npx vitest run packages/rpiv-ask-user-question --maxWorkers=2</code> — all green.</li><li>- [ ] <code>npx tsc --noEmit -p tsconfig.base.json</code> and non-mutating targeted Biome check — no new errors.</li><li>- [ ] Check shipping manifest, git diff --check, file paths for secret markers; stage only enumerated changes.</li><li>- [ ] Commit and push fearao/ask-user-workflow; isolated PI_CODING_AGENT_DIR install from pinned fork commit, SDK resource loading and TTY smoke; no model calls or real xnotify.</li><li>- [ ] Verify GitHub fork/branch, clean status, provide install command and report any unperformed manual UI checks. Do not switch real global installation.</li></ul></body></html>
