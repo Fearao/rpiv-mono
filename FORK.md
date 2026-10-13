@@ -35,6 +35,7 @@ upstream npm is the rollback; local configuration is preserved.
 | `workflow-policy.ts` | `tool_result` hook calls `ctx.abort()` only for actual cancellation. Needed because `terminate` alone does not stop mixed batches in Pi 1.1.0. |
 | `notifications.ts` | Optional event-driven xnotify adapter, 80-character first-question summary, argv, 5-second timeout, contained failures. |
 | `config.ts`, `index.ts`, manifests | Local opt-in/recipient; wire adapters; include modules in published files and Git installation entrypoint. |
+| `scripts/prepare.mjs` | Preserve Husky for development installs but skip it when Pi explicitly installs with `--omit=dev`. |
 
 No UI rewrite. Upstream owns previews, tabs, notes/global notes, multiline input/external editor,
 draft persistence, folding/scrolling, RPC fallback and no-UI tool hiding. No i18n dependency added.

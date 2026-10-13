@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createMockCtx, createMockPi } from "@juicesharp/rpiv-test-utils";
@@ -221,4 +222,14 @@ it("Git install manifest loads only the questionnaire extension", () => {
 		prompts: [],
 		themes: [],
 	});
+});
+
+it("Git consumer install skips Husky when npm explicitly omits devDependencies", () => {
+	const root = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf-8"));
+	expect(root.scripts.prepare).toBe("node scripts/prepare.mjs");
+	const result = spawnSync(process.execPath, [new URL("../../scripts/prepare.mjs", import.meta.url).pathname], {
+		env: { ...process.env, npm_config_omit: "dev" },
+		encoding: "utf-8",
+	});
+	expect(result.status, result.stderr).toBe(0);
 });

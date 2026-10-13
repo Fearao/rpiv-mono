@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Preserve partial and empty submissions as unanswered decisions instead of inferred acceptance.
 - Add explicit local opt-in `xnotify` reminders with bounded, non-blocking, redacted failure handling.
 - Add a root Pi manifest that activates only this questionnaire when the fork is installed from Git.
+- Make the root prepare hook skip Husky during Pi's `--omit=dev` consumer install while preserving hooks for development installs.
 
 ## [2.13.8] - 2026-10-12
 
