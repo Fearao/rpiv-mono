@@ -4,7 +4,7 @@
 Orchestration shell above leaf widgets: composes pi-tui primitives into a height-stable dialog chrome, defines the `StatefulView<P>` contract every component honours, and fans canonical `QuestionnaireState` out to leaf `setProps` via two binding registries. Never touches reducer or input handling.
 
 ## Dependencies
-- **`@earendil-works/pi-tui`**: `Component`, `Container`, `Editor`, `Spacer`, `Text`, `truncateToWidth`
+- **`@earendil-works/pi-tui`**: `Component`, `Container`, `Editor`, `Spacer`, `Text`, `truncateToWidth`, `visibleWidth`, `wrapTextWithAnsi`
 - **`@earendil-works/pi-coding-agent`**: `Theme`, `DynamicBorder`
 - **`../state/selectors/{contract,derivations,focus}.js`**: read-only selectors and types
 - **`../state/state.js`**, **`../state/i18n-bridge.js`**, **`../tool/{types,format-answer}.js`**
@@ -20,6 +20,9 @@ dialog-builder.ts         — DialogView class + DialogProps/DialogConfig; re-ex
                             Residual height-equalizer computed inline as `spacerRows` in `render()`.
 dialog-copy.ts            — Hint / heading / Submit-tab copy constants. A leaf: imports nothing from `view/`,
                             so `dialog-builder` ↔ `tab-content-strategy` never form a runtime cycle (#208).
+tool-row.ts               — Transcript-row renderers (`renderCall` / `renderResult` slots): title rule,
+                            one `▸ header → answer` row per question, closing rule; `expanded` adds the
+                            full question and notes. Reads args + details, never state.
 components/               — Leaf renderers (see .rpiv/guidance/packages/rpiv-ask-user-question/view/components/architecture.md)
 ```
 

@@ -15,6 +15,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add default-on `larknotify` reminders using its configured default target, with explicit disable, optional target override, bounded non-blocking execution and redacted failure handling.
 - Add a root Pi manifest that activates only this questionnaire when the fork is installed from Git.
 - Make the root prepare hook skip Husky during Pi's `--omit=dev` consumer install while preserving hooks for development installs.
+- Frame the answered call in the transcript: `renderCall` draws a title rule and `renderResult` draws one `▸ Header → answer` row per question behind a left bar plus a closing rule, so the row stays recognizable when tool output is collapsed (`Ctrl+O`); expanding adds the full question text and notes.
 
 ## [2.13.8] - 2026-10-12
 

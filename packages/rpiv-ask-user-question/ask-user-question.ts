@@ -40,6 +40,7 @@ import {
 } from "./tool/types.js";
 import { validateQuestionnaire } from "./tool/validate-questionnaire.js";
 import type { WrappingSelectItem } from "./view/components/wrapping-select.js";
+import { renderCallRow, renderResultRow } from "./view/tool-row.js";
 
 function emitAskUserPromptEvent(pi: ExtensionAPI, params: QuestionParams): void {
 	const payload: AskUserPromptEventPayload = {
@@ -387,6 +388,11 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 		parameters: QuestionParamsSchema,
 		// Undo double-encoded nested arguments before Pi validates them (#244).
 		prepareArguments: prepareQuestionArguments,
+		// Frame the transcript row instead of Pi's plain tool-output fallback: the title
+		// rule plus one `▸ header → answer` row per question, so a collapsed row
+		// (`app.tools.expand`) stays visually distinct from other tools' output.
+		renderCall: (args, theme) => renderCallRow(args, theme),
+		renderResult: (result, options, theme, context) => renderResultRow(result, options, theme, context),
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			// Line-terminator normalization runs once here, ahead of validation, so
